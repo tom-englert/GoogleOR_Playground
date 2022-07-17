@@ -1,8 +1,10 @@
 ﻿internal static class Engine
 {
-    public static void Solve(int numberOfRoomsOrSessions, int numberOfUsers)
+    public static void Solve(int numberOfRoomsOrTimeSlots, int numberOfUsers)
     {
         var start = DateTime.Now;
+        var numberOfRooms = numberOfRoomsOrTimeSlots;
+        var numberOfTimeSlots = numberOfRoomsOrTimeSlots;
 
         var model = new CpModel();
 
@@ -16,15 +18,15 @@
 
         foreach (var user in users)
         {
-            // User must be in different room for every session
-            model.AddAllDifferent(user.RoomBySession);
+            // User must be in different room for every time slot
+            model.AddAllDifferent(user.TimeSlots.Select(timeSlot => timeSlot.Room));
         }
 
         foreach (var pair in users.GetAllPairs())
         {
-            // Get all pairs of users and add boolean vars for every session that is true if both are in the same room for that session.
-            var isInSameRoom = pair.Item1.RoomBySession
-                .Zip(pair.Item2.RoomBySession)
+            // Get all pairs of users and add boolean vars for every timeSlot that is true if both are in the same room for that time slot.
+            var isInSameRoom = pair.Item1.TimeSlots.Select(timeSlot => timeSlot.Room)
+                .Zip(pair.Item2.TimeSlots.Select(timeSlot => timeSlot.Room))
                 .Select(AddIsInSameRoomConstraint).ToArray();
 
             sameRoomConstraints.AddRange(isInSameRoom);
@@ -40,7 +42,7 @@
             // StringParameters = "enumerate_all_solutions:true"
         };
 
-        Console.WriteLine("Number of rooms: {0}", numberOfRoomsOrSessions);
+        Console.WriteLine("Number of rooms: {0}", numberOfRooms);
         Console.WriteLine("Number of users: {0}", numberOfUsers);
         Console.WriteLine("Same room constraints: {0}", sameRoomConstraints.Count);
 
@@ -61,12 +63,12 @@
             return;
         }
 
-        Console.WriteLine("Session   | " + string.Join(" | ", Enumerable.Range(1, numberOfRoomsOrSessions).Select(i => i.ToString("000"))));
-        Console.WriteLine("----------|-" + string.Join("-|-", Enumerable.Range(1, numberOfRoomsOrSessions).Select(_ => "---")));
+        Console.WriteLine("TimeSlot  | " + string.Join(" | ", Enumerable.Range(1, numberOfTimeSlots).Select(i => i.ToString(" 00"))));
+        Console.WriteLine("----------|-" + string.Join("-|-", Enumerable.Range(1, numberOfTimeSlots).Select(_ => "---")));
 
         foreach (var user in users)
         {
-            Console.WriteLine("{0,-10}| {1}", "User" + user.Id, string.Join(" | ", user.RoomBySession.Select(var => solver.Value(var).ToString("000"))));
+            Console.WriteLine("{0,-10}| {1}", "User" + user.Id, string.Join(" | ", user.TimeSlots.Select(timeSlot => "R" + solver.Value(timeSlot.Room).ToString("00"))));
         }
 
         Console.WriteLine();
@@ -80,16 +82,17 @@
 
         User CreateUser(int userId)
         {
-            var roomBySession = Enumerable.Range(1, numberOfRoomsOrSessions)
-                .Select(sessionId => model.NewIntVar(1, numberOfRoomsOrSessions, $"User {userId} Session {sessionId}")).ToArray();
+            var timeSlots = Enumerable.Range(1, numberOfTimeSlots)
+                .Select(timeSlotId => new TimeSlot(timeSlotId, model.NewIntVar(1, numberOfRooms, $"User {userId} TimeSlot {timeSlotId}")))
+                .ToArray();
 
-            return new User(userId, roomBySession);
+            return new User(userId, timeSlots);
         }
 
-        BoolVar AddIsInSameRoomConstraint((IntVar First, IntVar Second) sessionPair)
+        BoolVar AddIsInSameRoomConstraint((IntVar First, IntVar Second) timeSlotPair)
         {
-            var first = sessionPair.First;
-            var second = sessionPair.Second;
+            var first = timeSlotPair.First;
+            var second = timeSlotPair.Second;
 
             var isInSameRoom = model.NewBoolVar(first.Name() + " and " + second.Name());
 
@@ -100,7 +103,9 @@
         }
     }
 
-    private record User(int Id, IntVar[] RoomBySession);
+    private record User(int Id, TimeSlot[] TimeSlots);
+
+    private record TimeSlot(int Id, IntVar Room);
 
     private class Callback : SolutionCallback
     {

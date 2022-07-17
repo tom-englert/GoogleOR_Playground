@@ -1,6 +1,6 @@
-﻿const int numberOfRoomsOrSessions = 6;
-const int numberOfUsers = 11;
+﻿const int numberOfRoomsOrTimeSlots = 6;
+const int numberOfUsers = 10;
 
-Engine.Solve(numberOfRoomsOrSessions, numberOfUsers);
+Engine.Solve(numberOfRoomsOrTimeSlots, numberOfUsers);
 
 
