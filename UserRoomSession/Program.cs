@@ -1,6 +1,6 @@
-﻿const int numberOfRoomsOrTimeSlots = 6;
-const int numberOfUsers = 10;
+﻿const int numberOfRoomsOrTimeSlots = 9;
+const int numberOfUsers = 25;
 
-Engine.Solve(numberOfRoomsOrTimeSlots, numberOfUsers);
+Engine.Solve(numberOfRoomsOrTimeSlots, numberOfUsers, TimeSpan.FromMinutes(10));
 
 
