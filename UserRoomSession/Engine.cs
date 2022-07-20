@@ -40,6 +40,7 @@ internal static class Engine
 
         Console.WriteLine("Number of rooms: {0}", numberOfRooms);
         Console.WriteLine("Number of users: {0}", numberOfUsers);
+        Console.WriteLine("Timeout: {0}", timeout.TotalMilliseconds < 0 ? "Infinite" : timeout);
         Console.WriteLine("Same room constraints: {0}", sameRoomConstraints.Count);
         Console.WriteLine();
 
